@@ -176,6 +176,7 @@ class AlarmoBaseEntity(AlarmControlPanelEntity, RestoreEntity):
         self._revert_state = None
         self._ready_to_arm_modes = []
         self._last_triggered = None
+        self._validated_user = None
 
     @property
     def device_info(self) -> dict:
@@ -404,6 +405,10 @@ class AlarmoBaseEntity(AlarmControlPanelEntity, RestoreEntity):
 
         # success
         self._changed_by = user[ATTR_NAME]
+        
+        # store the validated user for the function caller
+        self._validated_user = user
+        
         return True, None
 
     async def async_service_disarm_handler(self, code, context_id=None):
@@ -578,7 +583,7 @@ class AlarmoBaseEntity(AlarmControlPanelEntity, RestoreEntity):
                     self.open_sensors = None
                     self.schedule_update_ha_state()
                 return False
-            elif info and info[const.ATTR_IS_OVERRIDE_CODE]:
+            elif self._validated_user and self._validated_user.get(const.ATTR_IS_OVERRIDE_CODE, False):
                 bypass_open_sensors = True
         else:
             self._changed_by = None
