@@ -176,7 +176,6 @@ class AlarmoBaseEntity(AlarmControlPanelEntity, RestoreEntity):
         self._revert_state = None
         self._ready_to_arm_modes = []
         self._last_triggered = None
-        self._validated_user = None
 
     @property
     def device_info(self) -> dict:
@@ -324,8 +323,10 @@ class AlarmoBaseEntity(AlarmControlPanelEntity, RestoreEntity):
     async def _validate_code(self, code, to_state):  # noqa PLR0911
         """Validate code and user permissions for a requested state change.
 
-        Returns a (success, error_event) tuple. When success is True,
-        error_event is None.
+        Returns a (success, info) tuple. 
+        When validation is successful, success is True, otherwise False.
+        When success is True, info is the user data (or None if no user/code was needed).
+        When success is False, info is the error event.
         """
         # check bypass rules
         if (
@@ -405,11 +406,7 @@ class AlarmoBaseEntity(AlarmControlPanelEntity, RestoreEntity):
 
         # success
         self._changed_by = user[ATTR_NAME]
-        
-        # store the validated user for the function caller
-        self._validated_user = user
-        
-        return True, None
+        return True, user
 
     async def async_service_disarm_handler(self, code, context_id=None):
         """Handle external disarm request from alarmo.disarm service."""
@@ -583,7 +580,7 @@ class AlarmoBaseEntity(AlarmControlPanelEntity, RestoreEntity):
                     self.open_sensors = None
                     self.schedule_update_ha_state()
                 return False
-            elif self._validated_user and self._validated_user.get(const.ATTR_IS_OVERRIDE_CODE, False):
+            elif info and info[const.ATTR_IS_OVERRIDE_CODE]:
                 bypass_open_sensors = True
         else:
             self._changed_by = None
