@@ -270,6 +270,24 @@ class AlarmoBaseEntity(AlarmControlPanelEntity, RestoreEntity):
         else:
             self._open_sensors = {}
 
+##########NEW ADDITION
+    @property
+    def active_when_armed(self):
+        """Get allowed open."""
+        if not self._active_when_armed:
+            return None
+        else:
+            return self._active_when_armed
+
+    @active_when_armed.setter
+    def active_when_armed(self, value):
+        """Set active_when_armed."""
+        if type(value) is list:
+            self._active_when_armed = value
+        elif not value:
+            self._active_when_armed = None
+###################
+    
     @property
     def bypassed_sensors(self):
         """Get bypassed sensors."""
@@ -315,6 +333,7 @@ class AlarmoBaseEntity(AlarmControlPanelEntity, RestoreEntity):
             "arm_mode": self.arm_mode,
             "next_state": self.next_state,
             "open_sensors": self.open_sensors,
+            "active_when_armed": self.active_when_armed,  #new addition
             "bypassed_sensors": self.bypassed_sensors,
             "delay": self.delay,
             "last_triggered": self.last_triggered,
@@ -466,6 +485,7 @@ class AlarmoBaseEntity(AlarmControlPanelEntity, RestoreEntity):
         else:
             self.open_sensors = None
             self.bypassed_sensors = None
+            self.active_when_armed = None #########New addition
             self.async_update_state(AlarmControlPanelState.DISARMED)
             if self.changed_by:
                 _LOGGER.info(
@@ -592,6 +612,7 @@ class AlarmoBaseEntity(AlarmControlPanelEntity, RestoreEntity):
             self._revert_state = AlarmControlPanelState.DISARMED
             self.open_sensors = None
             self.bypassed_sensors = None
+            self.active_when_armed = None ### New addition
 
         self.async_arm(
             arm_mode,
@@ -725,6 +746,10 @@ class AlarmoBaseEntity(AlarmControlPanelEntity, RestoreEntity):
                 self._bypassed_sensors = state.attributes["bypassed_sensors"]
             if "last_triggered" in state.attributes:
                 self._last_triggered = state.attributes["last_triggered"]
+            #####NEW ADDITION
+            if "active_when_armed" in state.attributes:
+                self.active_when_armed = state.attributes["active_when_armed"]
+            #########
 
     async def async_will_remove_from_hass(self):
         """Disconnect entity object when removed."""
@@ -913,9 +938,9 @@ class AlarmoAreaEntity(AlarmoBaseEntity):
         exit_delay = int(self._config[const.ATTR_MODES][arm_mode]["exit_time"] or 0)
 
         if skip_delay or not exit_delay:
-            # immediate arm event
+            # immediate arm event #active new addition
 
-            (open_sensors, bypassed_sensors) = self.hass.data[const.DOMAIN][
+            (open_sensors, bypassed_sensors, active_when_armed) = self.hass.data[const.DOMAIN][
                 "sensor_handler"
             ].validate_arming_event(
                 area_id=self.area_id,
@@ -936,6 +961,8 @@ class AlarmoAreaEntity(AlarmoBaseEntity):
                 # proceed the arm
                 if bypassed_sensors:
                     self.bypassed_sensors = bypassed_sensors
+                if active_when_armed: #######New addition
+                    self.active_when_armed = active_when_armed #####
                 self.open_sensors = open_sensors if open_sensors else None
                 if self.changed_by:
                     _LOGGER.info(
@@ -965,8 +992,8 @@ class AlarmoAreaEntity(AlarmoBaseEntity):
                 self.async_update_state(arm_mode)
                 return True
 
-        else:  # normal arm event (from disarmed via arming)
-            (open_sensors, _bypassed_sensors) = self.hass.data[const.DOMAIN][
+        else:  # normal arm event (from disarmed via arming) #active new addition
+            (open_sensors, _bypassed_sensors, active_when_armed) = self.hass.data[const.DOMAIN][
                 "sensor_handler"
             ].validate_arming_event(
                 area_id=self.area_id,
