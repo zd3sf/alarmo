@@ -303,6 +303,7 @@ class SensorHandler:
         sensors_list = self.active_sensors_for_alarm_state(area_id, target_state)
         open_sensors = {}
         bypassed_sensors = []
+        active_when_armed = []##########New addition
 
         alarm_state = target_state
         if use_delay and alarm_state in const.ARM_MODES:
@@ -330,11 +331,12 @@ class SensorHandler:
                     bypassed_sensors.append(entity)
                 elif sensor_config[ATTR_ALLOW_OPEN] and sensor_state == STATE_OPEN:
                     # sensor is permitted to be open during/after arming
+                    active_when_armed.append(entity) ###########NEW ADDITION
                     continue
                 else:
                     open_sensors[entity] = sensor_state
 
-        return (open_sensors, bypassed_sensors)
+        return (open_sensors, bypassed_sensors, active_when_armed) ##active new
 
     def get_entry_delay_for_trigger(
         self, open_sensors: dict[str, str], area_id: str, arm_mode: str
