@@ -303,7 +303,19 @@ class AutomationHandler:
                     parts.append(name)
                 bypassed_sensors = ", ".join(parts)
             input = input.replace("{{bypassed_sensors}}", bypassed_sensors)
-
+##########
+        # process wildcard '{{active_when_armed}}'
+        if "{{active_when_armed}}" in input:
+            active_when_armed = ""
+            if alarm_entity.active_when_armed and len(alarm_entity.active_when_armed):
+                parts = []
+                for entity_id in alarm_entity.active_when_armed:
+                    name = friendly_name_for_entity_id(entity_id, self.hass)
+                    parts.append(name)
+                active_when_armed = "Open: " + ", ".join(parts)
+            input = input.replace("{{active_when_armed}}", active_when_armed)
+##############
+        
         # process wildcard '{{arm_mode}}'
         res = re.search(r"{{arm_mode(\|lang=([^}]+))?}}", input)
         if res:
